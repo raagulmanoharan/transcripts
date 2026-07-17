@@ -1,125 +1,149 @@
-import { useEffect, useState } from "react";
-import type { Space } from "./types";
-import { resolveIntent } from "./lib/intent";
-import {
-  createSpace,
-  loadSpaces,
-  saveSpaces,
-} from "./lib/store";
-import { Locus } from "./components/Locus";
-import { SpaceView } from "./components/SpaceView";
-import { SpaceSwitcher } from "./components/SpaceSwitcher";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { Prediction, Situation } from "./types";
+import { gatherSituation } from "./connectors";
+import { predict } from "./lib/oracle";
+import { Ambient, type Phase } from "./components/Ambient";
+import { PredictionCard } from "./components/PredictionCard";
+import { Move } from "./components/Move";
+
+const CONFIDENCE_THRESHOLD = 60;
+const CYCLE_MS = 45_000; // how often the system re-senses when it's quiet
 
 export function App() {
-  const [spaces, setSpaces] = useState<Space[]>(() => loadSpaces());
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string>("");
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [phase, setPhase] = useState<Phase>("waking");
+  const [situation, setSituation] = useState<Situation | null>(null);
+  const [prediction, setPrediction] = useState<Prediction | null>(null);
+  const [acting, setActing] = useState<Prediction | null>(null);
+  const [reveal, setReveal] = useState(false);
+  const [error, setError] = useState("");
+  const busy = useRef(false);
+  const timer = useRef<number | null>(null);
 
-  useEffect(() => {
-    saveSpaces(spaces);
-  }, [spaces]);
-
-  const active = spaces.find((s) => s.id === activeId) ?? null;
-
-  async function handleIntent(text: string) {
-    setBusy(true);
+  // One sense -> think pass. Won't interrupt a surfaced card or an active move.
+  const pulse = useCallback(async () => {
+    if (busy.current) return;
+    busy.current = true;
     setError("");
+    setPhase("sensing");
     try {
-      const resp = await resolveIntent(text);
-      const space = createSpace(text, resp);
-      setSpaces((prev) => [space, ...prev]);
-      setActiveId(space.id);
+      const s = await gatherSituation();
+      setSituation(s);
+      setPhase("thinking");
+      const p = await predict(s);
+      if (p.surface && p.confidence >= CONFIDENCE_THRESHOLD) {
+        setPrediction(p);
+        setPhase("surfaced");
+      } else {
+        setPrediction(null);
+        setPhase("quiet");
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong.");
+      setError(e instanceof Error ? e.message : "The Oracle is unavailable.");
+      setPhase("quiet");
     } finally {
-      setBusy(false);
+      busy.current = false;
     }
+  }, []);
+
+  // Boot, then a gentle heartbeat while quiet. Re-sense when the app regains
+  // focus (the world changed while they were away).
+  useEffect(() => {
+    void pulse();
+    function schedule() {
+      timer.current = window.setInterval(() => {
+        if (!prediction && !acting) void pulse();
+      }, CYCLE_MS);
+    }
+    schedule();
+    const onFocus = () => {
+      if (!prediction && !acting) void pulse();
+    };
+    window.addEventListener("focus", onFocus);
+    return () => {
+      if (timer.current) window.clearInterval(timer.current);
+      window.removeEventListener("focus", onFocus);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function confirm() {
+    if (!prediction) return;
+    if (prediction.move.kind !== "none") {
+      setActing(prediction);
+      setPhase("acting");
+    } else {
+      setPhase("quiet");
+    }
+    setPrediction(null);
   }
 
-  function deleteSpace(id: string) {
-    setSpaces((prev) => prev.filter((s) => s.id !== id));
-    if (activeId === id) setActiveId(null);
+  function dismiss() {
+    setPrediction(null);
+    setPhase("quiet");
+  }
+
+  function endMove() {
+    setActing(null);
+    setPhase("quiet");
+    void pulse();
   }
 
   return (
     <div className="app">
-      <header className="app-bar">
-        <button
-          className="app-bar-menu"
-          onClick={() => setDrawerOpen((v) => !v)}
-          aria-label="Spaces"
-        >
-          ☰
-        </button>
-        <div className="app-bar-title" onClick={() => setActiveId(null)}>
-          Intentions
-        </div>
-        <div className="app-bar-spacer" />
-      </header>
+      <Ambient situation={situation} phase={phase} onReveal={() => setReveal(true)} />
 
-      {drawerOpen ? (
-        <div className="drawer-scrim" onClick={() => setDrawerOpen(false)}>
-          <div className="drawer" onClick={(e) => e.stopPropagation()}>
-            <SpaceSwitcher
-              spaces={spaces}
-              activeId={activeId}
-              onSelect={(id) => {
-                setActiveId(id);
-                setDrawerOpen(false);
-              }}
-              onDelete={deleteSpace}
-              onNew={() => {
-                setActiveId(null);
-                setDrawerOpen(false);
-              }}
-            />
+      {error ? <div className="whisper-error">{error}</div> : null}
+
+      {prediction ? (
+        <div className="focal">
+          <PredictionCard prediction={prediction} onConfirm={confirm} onDismiss={dismiss} />
+        </div>
+      ) : null}
+
+      {acting ? (
+        <div className="focal">
+          <div className="acting">
+            <div className="acting-head">
+              <span className="acting-label">{acting.headline}</span>
+              <button className="acting-close" onClick={endMove} aria-label="Done">
+                Done
+              </button>
+            </div>
+            <Move move={acting.move} id={acting.headline} />
           </div>
         </div>
       ) : null}
 
-      <main className="app-main">
-        {error ? <div className="banner-error">{error}</div> : null}
-
-        {active ? (
-          <SpaceView space={active} />
-        ) : (
-          <EmptyState spaces={spaces} onOpen={setActiveId} />
-        )}
-      </main>
-
-      <Locus onSubmit={handleIntent} busy={busy} />
+      {reveal && situation ? (
+        <SignalsSheet situation={situation} onClose={() => setReveal(false)} />
+      ) : null}
     </div>
   );
 }
 
-function EmptyState({
-  spaces,
-  onOpen,
-}: {
-  spaces: Space[];
-  onOpen: (id: string) => void;
-}) {
+function SignalsSheet({ situation, onClose }: { situation: Situation; onClose: () => void }) {
   return (
-    <div className="empty">
-      <div className="empty-mark" aria-hidden="true">
-        <span />
-      </div>
-      <h1 className="empty-title">Declare an intention</h1>
-      <p className="empty-sub">
-        No apps to launch. Say what you want, and the interface assembles itself.
-      </p>
-      {spaces.length > 0 ? (
-        <div className="empty-recent">
-          <div className="empty-recent-label">Open intentions</div>
-          {spaces.slice(0, 6).map((s) => (
-            <button key={s.id} className="chip" onClick={() => onOpen(s.id)}>
-              {s.space.title}
-            </button>
+    <div className="sheet-scrim" onClick={onClose}>
+      <div className="sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-grip" />
+        <div className="sheet-title">What I'm sensing</div>
+        <div className="signals">
+          {situation.signals.map((s) => (
+            <div key={s.source} className="signal">
+              <div className="signal-source">
+                {s.source}
+                {s.simulated ? <span className="sim">simulated</span> : null}
+              </div>
+              <div className="signal-label">{s.label}</div>
+              <div className="signal-detail">{s.detail}</div>
+            </div>
           ))}
         </div>
-      ) : null}
+        <p className="sheet-note">
+          Location, weather, time and device are live. Gmail, calendar, health and phone are
+          simulated here — real connectors drop in behind the same interface.
+        </p>
+      </div>
     </div>
   );
 }

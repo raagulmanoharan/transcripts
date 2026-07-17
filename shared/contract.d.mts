@@ -1,19 +1,27 @@
 // Types for the shared contract so the TypeScript client can consume it.
 
-export interface ModuleSpec {
+export interface SourceSpec {
+  source: string;
+  hint: string;
+}
+export interface MoveSpec {
   kind: string;
   guidance: string;
 }
 
-export const MODULES: ModuleSpec[];
-export const MODULE_KINDS: readonly [
+export const SIGNAL_SOURCES: SourceSpec[];
+export const MOVES: MoveSpec[];
+export const MOVE_KINDS: readonly [
+  "none",
   "note",
-  "weather",
   "timer",
   "tasks",
   "message",
+  "directions",
+  "weather",
   "web",
   "info",
 ];
-export function buildModuleGuidance(): string;
-export function buildSpaceSchema(): Record<string, unknown>;
+export function buildSourceList(): string;
+export function buildMoveGuidance(): string;
+export function buildPredictionSchema(): Record<string, unknown>;

@@ -1,80 +1,65 @@
 # Intentions
 
-An **intent-based operating environment** for the phone — as an installable web app (PWA) that runs on iOS.
+An **ambient, proactive intelligence** for the phone — as an installable web app (PWA) that runs on iOS.
 
-There are no apps to launch. You declare what you want in a single command surface, and the interface assembles itself: a real Claude model reads your intent and returns a **Space** of **Flows** and **Modules** that the app renders on demand.
+It doesn't wait to be asked. It quietly **senses** your context across connectors, **triangulates** them into a picture of what's happening now, and **predicts the single next move** — surfaced as one calm card you **confirm, not answer**. Most of the time it stays silent. The UI is stripped to a breathing "now" surface; the system speaks first, and only when it's worth it.
 
-> MVP scope: an app that *mimics an OS*. It prototypes the interaction model, not a real mobile OS. See [Design lineage](#design-lineage).
+> MVP scope: an app that *feels like* an ambient intelligent OS layer. See [What's real vs simulated](#whats-real-vs-simulated).
 
 ---
 
-## The interaction grammar
+## The shift
 
-Borrowed from [Mercury OS](https://uxdesign.cc/introducing-mercury-os-f4de45a04289) and given a working engine:
+From reactive to proactive:
 
-| Primitive | What it is | Here |
-| --- | --- | --- |
-| **Locus** | The single command surface — one entry point for every intent | The input bar at the bottom |
-| **Module** | Content + action, assembled on demand | An intent-rendered card (note, weather, timer, tasks, message, web, info) |
-| **Flow** | An ordered stack of Modules for one task | A vertical group |
-| **Space** | The Flows that fulfil one overarching intent | Replaces the home screen / app grid |
-
-Every Module is described with a **noun-verb-modifier** intent schema (`item` / `action` / `modifier`), which maps cleanly onto how a real phone OS (e.g. Android Intents) routes actions.
+| Old (reactive) | Now (proactive) |
+| --- | --- |
+| You declare an intent | The system predicts your next move |
+| It answers | It anticipates |
+| A command bar | A calm ambient surface — no command bar |
+| You ask | You **confirm** (never "would you like…?") |
 
 ## Architecture
 
 ```
-Locus (you)  ─►  /api/intent  ─►  Claude (claude-opus-4-8, structured output)
-                    │
-                    ▼
-              Space { Flows[ Modules[] ] }  ─►  React renderer  ─►  cards
+Connectors ──► Situation ──► Oracle (claude-opus-4-8) ──► Prediction ──► Confirm ──► Move
+ (signals)     (fused now)     triangulate + predict       (one card)               (artifact)
 ```
 
-- **`shared/contract.mjs`** — the single source of truth for the Module vocabulary. It generates *both* the model's system prompt **and** the JSON schema it must fill; the client renderer switches on the same kinds. One definition, so the model's vocabulary and the renderer can't drift apart. (This pattern is borrowed from [AppLess](https://github.com/thesysdev/appless).)
-- **`server/index.mjs`** — a tiny Express proxy. Its only job is to keep the Anthropic API key server-side and turn one line of natural language into a Space via structured output. **The key never reaches the browser.**
-- **`src/`** — the React PWA: `Locus`, `SpaceView` → `Flow` → `Module`, and a `SpaceSwitcher` drawer.
+- **Connectors** (`src/connectors/`) — each yields a `Signal`. **Live:** location (geolocation), weather (Open-Meteo), time, device (battery/network). **Simulated:** Gmail, calendar, health, phone — a browser can't read those without OAuth/native, so they're stub providers behind the *same* interface; swap in the real source without touching the Oracle or UI.
+- **Situation** — the connectors fused into one snapshot of "now."
+- **The Oracle** (`server/index.mjs`) — a server proxy (keeps the Anthropic key off the client) that hands the Situation to Claude with structured output. Claude **triangulates** the signals and returns one **Prediction**: a headline phrased to confirm, a "because" line naming the signals it combined, a confidence + urgency, and the **Move** that confirming produces. It's told to stay quiet (`surface: false`) unless confidence ≥ 60.
+- **`shared/contract.mjs`** — single source of truth: defines the signal vocabulary and the Prediction schema, generates the Oracle's prompt, *and* is what the client renders against. Nothing drifts.
+- **Ambient UI** (`src/`) — `Ambient` (the "now" surface + peripheral awareness + a presence that breathes while it thinks) and `PredictionCard` (the one focal confirm). Confirming produces a `Move` (note, timer, tasks, message draft, directions, weather, web, info). Tap the periphery to see exactly what it's sensing.
 
-### Real device APIs
-
-- **Weather** Modules use `navigator.geolocation` + [Open-Meteo](https://open-meteo.com) (no key) for live weather.
-- **Notes** and **checklists** persist to `localStorage`.
-- iOS Safari doesn't expose contacts to web apps, so `message` Modules draft text you can copy or open in Messages.
+### Confirm, don't ask
+Predictions are statements, ready to accept — *"Head out by 8:55 to stay ahead of the rain,"* not *"Do you want directions?"* The "because" line makes the triangulation legible: *"rain at 9:10 + a 9:30 across town + you're still home."*
 
 ## Run it
 
 ```bash
 cp .env.example .env       # add your ANTHROPIC_API_KEY
 npm install
-npm run dev                # web on :5173, intent proxy on :8787
+npm run dev                # web on :5173, Oracle on :8787
 ```
 
-Open http://localhost:5173. The Vite dev server proxies `/api/*` to the Express proxy.
+Open http://localhost:5173. It boots, senses, and predicts; it re-senses on a gentle heartbeat and when the app regains focus. Grant location for live weather.
 
-Scripts:
-
-- `npm run dev` — web + proxy together
-- `npm run build` — production build (emits the PWA service worker)
-- `npm run typecheck` — TypeScript check
-- `npm run icons` — regenerate app icons
+Scripts: `npm run dev` · `npm run build` (emits the PWA service worker) · `npm run typecheck` · `npm run icons`.
 
 ## Install on iOS
 
-The app is a PWA. On a phone (over HTTPS — deploy the `dist/` build and run the proxy behind it, or use a tunnel for local testing):
+Over HTTPS (deploy `dist/` + the Oracle, or tunnel for local testing): Safari → **Share → Add to Home Screen** → launch full-screen.
 
-1. Open the site in **Safari**
-2. Share → **Add to Home Screen**
-3. Launch from the icon — it runs full-screen, no browser chrome
+## What's real vs simulated
 
-> Geolocation needs a secure context. `localhost` counts in dev; in the field you need HTTPS.
+- **Live now:** location, weather, time, device signals; the full Oracle loop (with a key); confirmed Moves (timers, notes, checklists, drafts, directions) persisted on-device.
+- **Simulated (MVP):** Gmail, calendar, health, phone connectors return plausible data behind the real interface. Production would wire OAuth (Google), HealthKit / Health Connect (native), and notification/focus state.
+- Moves are *prepared*, not executed — the system drafts and tees up; you confirm and act.
 
 ## Design lineage
 
-- **[TRIDENT OS](https://www.researchgate.net/publication/401657391_TRIDENT_OS_An_Intent-Based_Operating_Environment_for_Natural_Human-Computer_Interaction)** — intent engine as an orchestration layer over an existing OS (the pragmatic pattern).
-- **[Mercury OS](https://uxdesign.cc/introducing-mercury-os-f4de45a04289)** — the Locus / Module / Flow / Space interaction grammar.
-- **[AppLess](https://github.com/thesysdev/appless)** — one contract as the source of truth that generates the model's prompt; generative UI from intent.
-
-## Limitations (MVP)
-
-- Actions are *prepared*, not executed — the app drafts messages, checklists, and searches; you act. A real OS would route these to system intents.
-- Intent parsing is cloud (Claude). A production phone build would add an on-device model for routing/privacy and reserve the cloud for hard intents.
-- One renderer (web). No security/permission model beyond what the browser enforces.
+- **[TRIDENT OS](https://www.researchgate.net/publication/401657391_TRIDENT_OS_An_Intent-Based_Operating_Environment_for_Natural_Human-Computer_Interaction)** — intent engine as an orchestration layer over an existing OS.
+- **[Mercury OS](https://uxdesign.cc/introducing-mercury-os-f4de45a04289)** — Modules as content+action assembled on demand (here, what a confirmation produces).
+- **[AppLess](https://github.com/thesysdev/appless)** — one contract as the source of truth that generates the model's prompt.
+- **Apple HIG** — the ambient, monochrome treatment: materials and hairlines for depth, white as the only accent, quiet motion.
