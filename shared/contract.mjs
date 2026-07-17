@@ -63,7 +63,8 @@ export function buildPredictionSchema() {
       confidence: { type: "integer" }, // 0-100
       urgency: { type: "string", enum: ["ambient", "soon", "now"] },
       headline: { type: "string" }, // a statement to CONFIRM, never a question
-      because: { type: "string" }, // the triangulation rationale
+      because: { type: "string" }, // the triangulation rationale, one line
+      factors: { type: "array", items: { type: "string" } }, // 2-3 signal fragments fused (each 2-4 words)
       confirmLabel: { type: "string" }, // e.g. "Start", "Send", "Got it"
       move: {
         type: "object",
@@ -72,6 +73,15 @@ export function buildPredictionSchema() {
         required: Object.keys(MOVE_PROPERTIES),
       },
     },
-    required: ["surface", "confidence", "urgency", "headline", "because", "confirmLabel", "move"],
+    required: [
+      "surface",
+      "confidence",
+      "urgency",
+      "headline",
+      "because",
+      "factors",
+      "confirmLabel",
+      "move",
+    ],
   };
 }

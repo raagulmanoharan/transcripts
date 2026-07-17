@@ -50,7 +50,8 @@ export interface Prediction {
   confidence: number; // 0-100
   urgency: "ambient" | "soon" | "now";
   headline: string; // a statement to confirm
-  because: string; // triangulation rationale
+  because: string; // triangulation rationale, one line
+  factors: string[]; // 2-3 signal fragments fused, shown as the reasoning
   confirmLabel: string;
   move: Move;
 }

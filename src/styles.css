@@ -185,107 +185,186 @@ body {
   color: var(--text-2);
 }
 
-/* ---- Focal layer (prediction / active move) ---- */
-.focal {
+/* ---- Stage: a surfaced thought, not a modal ---- */
+.stage {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 12;
-  padding: 18px 18px calc(var(--safe-bottom) + 20px);
-  background: linear-gradient(0deg, var(--bg) 62%, rgba(6, 6, 7, 0));
-  animation: focal-in 0.5s var(--ease) both;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
 }
-@keyframes focal-in {
+.stage-scrim {
+  position: absolute;
+  inset: 0;
+  /* dim the field toward the edges — the ambient world stays faintly visible */
+  background: radial-gradient(125% 90% at 50% 58%, rgba(2, 2, 3, 0.28), rgba(2, 2, 3, 0.74));
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  animation: fade 0.4s var(--ease) both;
+}
+.stage-body {
+  position: relative;
+  width: 100%;
+  max-width: 380px;
+  animation: think-in 0.55s var(--ease) both;
+}
+@keyframes think-in {
   from {
     opacity: 0;
-    transform: translateY(16px);
+    transform: translateY(14px) scale(0.985);
+    filter: blur(6px);
   }
   to {
     opacity: 1;
     transform: none;
+    filter: none;
   }
 }
 
-.prediction {
-  background: var(--glass);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 0.5px solid var(--hairline-strong);
-  border-radius: 26px;
-  padding: 22px;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset, 0 20px 60px -18px rgba(0, 0, 0, 0.85);
-}
-.urgency {
-  display: inline-flex;
+/* The thought itself — no card chrome; it floats on the dimmed field. */
+.thought {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: var(--text-3);
-  font-weight: 620;
-  margin-bottom: 12px;
 }
-.urgency-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-3);
+
+/* Reasoning constellation */
+.reasoning {
+  width: 100%;
+  max-width: 300px;
+  height: auto;
+  overflow: visible;
+  margin-bottom: 4px;
 }
-.urgency-now .urgency-dot {
-  background: var(--text);
-  box-shadow: 0 0 12px rgba(255, 255, 255, 0.7);
+.r-line {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-dasharray: 260;
+  stroke-dashoffset: 260;
+  animation: draw 0.75s var(--ease) forwards;
+}
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.r-node {
+  fill: rgba(255, 255, 255, 0.78);
+}
+.r-label {
+  fill: var(--text-2);
+  font-family: inherit;
+  font-size: 10.5px;
+  letter-spacing: -0.01em;
+}
+.r-focal-glow {
+  fill: rgba(255, 255, 255, 0.12);
+  animation: glow 2.6s var(--ease) infinite;
+}
+.r-focal {
+  fill: #fff;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
+}
+@keyframes glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.reasoning.urgency-now .r-focal {
+  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
+}
+.reasoning.urgency-now .r-focal-glow {
+  fill: rgba(255, 255, 255, 0.2);
   animation: pulse 1.4s var(--ease) infinite;
 }
-.urgency-now {
-  color: var(--text);
+.reasoning.urgency-ambient .r-focal {
+  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
 }
-.pred-headline {
-  font-size: 25px;
-  font-weight: 560;
-  letter-spacing: -0.02em;
-  line-height: 1.18;
-  margin: 0 0 8px;
+
+.thought-headline {
+  font-size: 27px;
+  font-weight: 520;
+  letter-spacing: -0.025em;
+  line-height: 1.16;
+  margin: 6px 0 24px;
   text-wrap: balance;
 }
-.pred-because {
-  color: var(--text-2);
-  font-size: 14.5px;
-  line-height: 1.5;
-  margin: 0 0 20px;
-}
-.pred-actions {
+
+/* Commit — a quiet, full-width action; not a chunky CTA */
+.commit {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 14px;
-}
-.pred-confirm {
-  flex: 1;
-  justify-content: center;
-  padding: 14px;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--surface-2);
+  border: 0.5px solid var(--hairline-strong);
+  color: var(--text);
+  border-radius: 18px;
+  padding: 16px 20px;
   font-size: 16px;
+  font-weight: 560;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s var(--ease), border-color 0.3s;
 }
-.pred-dismiss {
+.commit:hover {
+  background: rgba(255, 255, 255, 0.11);
+}
+.commit:active {
+  transform: scale(0.985);
+  background: var(--text);
+  color: #000;
+}
+.commit-arrow {
+  color: var(--text-3);
+  transition: transform 0.2s var(--ease), color 0.2s;
+}
+.commit:hover .commit-arrow {
+  transform: translateX(3px);
+  color: var(--text);
+}
+.commit.urgency-now {
+  border-color: rgba(255, 255, 255, 0.32);
+  animation: invite 2.4s var(--ease) infinite;
+}
+@keyframes invite {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  50% {
+    box-shadow: 0 0 26px -6px rgba(255, 255, 255, 0.28);
+  }
+}
+.let-go {
   background: none;
   border: none;
   color: var(--text-3);
-  font-size: 15px;
-  padding: 10px;
+  font-size: 14px;
+  padding: 14px 10px 4px;
   cursor: pointer;
   transition: color 0.2s;
 }
-.pred-dismiss:hover {
+.let-go:hover {
   color: var(--text-2);
 }
 
-/* Active move */
+/* Active move — a calm operating surface (a tool, so lightly bounded) */
 .acting {
   background: var(--glass);
   backdrop-filter: blur(28px) saturate(160%);
   -webkit-backdrop-filter: blur(28px) saturate(160%);
   border: 0.5px solid var(--hairline-strong);
-  border-radius: 26px;
+  border-radius: 24px;
   padding: 20px;
   box-shadow: 0 20px 60px -18px rgba(0, 0, 0, 0.85);
 }
@@ -297,10 +376,11 @@ body {
   margin-bottom: 14px;
 }
 .acting-label {
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 560;
   letter-spacing: -0.015em;
-  line-height: 1.3;
+  line-height: 1.35;
+  color: var(--text-2);
 }
 .acting-close {
   flex: 0 0 auto;

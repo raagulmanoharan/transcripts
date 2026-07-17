@@ -95,21 +95,27 @@ export function App() {
       {error ? <div className="whisper-error">{error}</div> : null}
 
       {prediction ? (
-        <div className="focal">
-          <PredictionCard prediction={prediction} onConfirm={confirm} onDismiss={dismiss} />
+        <div className="stage">
+          <div className="stage-scrim" onClick={dismiss} />
+          <div className="stage-body">
+            <PredictionCard prediction={prediction} onConfirm={confirm} onDismiss={dismiss} />
+          </div>
         </div>
       ) : null}
 
       {acting ? (
-        <div className="focal">
-          <div className="acting">
-            <div className="acting-head">
-              <span className="acting-label">{acting.headline}</span>
-              <button className="acting-close" onClick={endMove} aria-label="Done">
-                Done
-              </button>
+        <div className="stage">
+          <div className="stage-scrim" onClick={endMove} />
+          <div className="stage-body">
+            <div className="acting">
+              <div className="acting-head">
+                <span className="acting-label">{acting.headline}</span>
+                <button className="acting-close" onClick={endMove} aria-label="Done">
+                  Done
+                </button>
+              </div>
+              <Move move={acting.move} id={acting.headline} />
             </div>
-            <Move move={acting.move} id={acting.headline} />
           </div>
         </div>
       ) : null}
