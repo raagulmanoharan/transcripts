@@ -18,8 +18,8 @@ export default defineConfig({
         short_name: "Intentions",
         description:
           "An intent-based operating environment for the phone. Declare what you want; the system assembles the interface.",
-        theme_color: "#0b0b12",
-        background_color: "#0b0b12",
+        theme_color: "#060607",
+        background_color: "#060607",
         display: "standalone",
         orientation: "portrait",
         start_url: "/",

@@ -68,29 +68,37 @@ function mix(a, b, t) {
 }
 
 function drawIcon(size) {
+  // Monochrome + ambient: near-black field with a soft luminance toward the
+  // upper area, and a white focus ring + dot. No hue — depth from light alone.
   const buf = Buffer.alloc(size * size * 4);
   const cx = size / 2;
   const cy = size / 2;
   const ring = size * 0.3; // ring radius
-  const ringW = size * 0.055; // ring thickness
-  const dot = size * 0.11; // inner dot radius
+  const ringW = size * 0.05; // ring thickness
+  const dot = size * 0.1; // inner dot radius
+  const glowX = size * 0.42;
+  const glowY = size * 0.32;
+  const glowR = size * 0.85;
   for (let y = 0; y < size; y++) {
     for (let x = 0; x < size; x++) {
       const i = (y * size + x) * 4;
-      // diagonal gradient: indigo (#4F46E5) -> violet (#7C3AED)
-      const t = (x + y) / (2 * size);
-      let r = mix(0x4f, 0x7c, t);
-      let g = mix(0x46, 0x3a, t);
-      let b = mix(0xe5, 0xed, t);
+      // base near-black with a slight cool bias (#0a0a0c-ish)
+      let v = 10;
+      // ambient glow
+      const gd = Math.hypot(x - glowX, y - glowY);
+      const glow = Math.max(0, 1 - gd / glowR);
+      v += Math.round(38 * glow * glow);
+      let r = v;
+      let g = v;
+      let b = v + 2; // faint cool bias
       const d = Math.hypot(x - cx, y - cy);
-      // focus ring + dot in soft white
       const onRing = Math.abs(d - ring) < ringW;
       const inDot = d < dot;
       if (onRing || inDot) {
         const edge = onRing
           ? 1 - Math.min(1, (Math.abs(d - ring) / ringW) ** 2)
           : 1 - Math.min(1, (d / dot) ** 4);
-        const a = 0.55 + 0.4 * edge;
+        const a = 0.6 + 0.4 * edge;
         r = mix(r, 0xff, a);
         g = mix(g, 0xff, a);
         b = mix(b, 0xff, a);
@@ -115,14 +123,14 @@ for (const [name, size] of [
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#4F46E5"/>
-      <stop offset="1" stop-color="#7C3AED"/>
-    </linearGradient>
+    <radialGradient id="g" cx="42%" cy="32%" r="85%">
+      <stop offset="0" stop-color="#242428"/>
+      <stop offset="1" stop-color="#0a0a0c"/>
+    </radialGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#g)"/>
-  <circle cx="256" cy="256" r="150" fill="none" stroke="#fff" stroke-width="28" opacity="0.92"/>
-  <circle cx="256" cy="256" r="56" fill="#fff"/>
+  <circle cx="256" cy="256" r="150" fill="none" stroke="#fff" stroke-width="26" opacity="0.96"/>
+  <circle cx="256" cy="256" r="52" fill="#fff"/>
 </svg>
 `;
 fs.writeFileSync(path.join(outDir, "icon.svg"), svg);
