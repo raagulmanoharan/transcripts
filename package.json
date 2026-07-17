@@ -1,0 +1,33 @@
+{
+  "name": "intentions",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "An intent-based operating environment for the phone, as an installable web app (PWA).",
+  "scripts": {
+    "dev": "concurrently -k -n web,api -c cyan,magenta \"vite\" \"node server/index.mjs\"",
+    "dev:web": "vite",
+    "dev:api": "node server/index.mjs",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "preview": "vite preview",
+    "start": "node server/index.mjs",
+    "icons": "node scripts/gen-icons.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "concurrently": "^9.1.0",
+    "typescript": "^5.7.0",
+    "vite": "^7.0.0",
+    "vite-plugin-pwa": "^1.0.0"
+  }
+}
