@@ -198,159 +198,130 @@ body {
 .stage-scrim {
   position: absolute;
   inset: 0;
-  /* dim the field toward the edges — the ambient world stays faintly visible */
-  background: radial-gradient(125% 90% at 50% 58%, rgba(2, 2, 3, 0.28), rgba(2, 2, 3, 0.74));
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  animation: fade 0.4s var(--ease) both;
+  /* a gentle dim for depth — the card carries legibility, so keep it light */
+  background: rgba(2, 2, 3, 0.5);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  animation: fade 0.35s var(--ease) both;
 }
 .stage-body {
   position: relative;
   width: 100%;
   max-width: 380px;
-  animation: think-in 0.55s var(--ease) both;
+  animation: sugg-in 0.5s var(--ease) both;
 }
-@keyframes think-in {
+@keyframes sugg-in {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.985);
-    filter: blur(6px);
+    transform: translateY(14px) scale(0.98);
   }
   to {
     opacity: 1;
     transform: none;
-    filter: none;
   }
 }
 
-/* The thought itself — no card chrome; it floats on the dimmed field. */
-.thought {
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* Reasoning constellation */
-.reasoning {
-  width: 100%;
-  max-width: 300px;
-  height: auto;
-  overflow: visible;
-  margin-bottom: 4px;
-}
-.r-line {
-  stroke: rgba(255, 255, 255, 0.22);
-  stroke-width: 1;
-  stroke-linecap: round;
-  stroke-dasharray: 260;
-  stroke-dashoffset: 260;
-  animation: draw 0.75s var(--ease) forwards;
-}
-@keyframes draw {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-.r-node {
-  fill: rgba(255, 255, 255, 0.78);
-}
-.r-label {
-  fill: var(--text-2);
-  font-family: inherit;
-  font-size: 10.5px;
-  letter-spacing: -0.01em;
-}
-.r-focal-glow {
-  fill: rgba(255, 255, 255, 0.12);
-  animation: glow 2.6s var(--ease) infinite;
-}
-.r-focal {
-  fill: #fff;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.5));
-}
-@keyframes glow {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-.reasoning.urgency-now .r-focal {
-  filter: drop-shadow(0 0 15px rgba(255, 255, 255, 0.9));
-}
-.reasoning.urgency-now .r-focal-glow {
-  fill: rgba(255, 255, 255, 0.2);
-  animation: pulse 1.4s var(--ease) infinite;
-}
-.reasoning.urgency-ambient .r-focal {
-  filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.3));
-}
-
-.thought-headline {
-  font-size: 27px;
-  font-weight: 520;
-  letter-spacing: -0.025em;
-  line-height: 1.16;
-  margin: 6px 0 24px;
-  text-wrap: balance;
-}
-
-/* Commit — a quiet, full-width action; not a chunky CTA */
-.commit {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  background: var(--surface-2);
+/* Suggestion card — a legible material, left-aligned, content-first */
+.sugg {
+  background: rgba(23, 23, 27, 0.94);
+  backdrop-filter: blur(30px) saturate(150%);
+  -webkit-backdrop-filter: blur(30px) saturate(150%);
   border: 0.5px solid var(--hairline-strong);
+  border-radius: 28px;
+  padding: 22px;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 26px 70px -20px rgba(0, 0, 0, 0.9);
+}
+.sugg-glyph {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  border: 0.5px solid var(--hairline);
+  display: grid;
+  place-items: center;
   color: var(--text);
-  border-radius: 18px;
-  padding: 16px 20px;
-  font-size: 16px;
-  font-weight: 560;
-  letter-spacing: -0.01em;
-  cursor: pointer;
-  transition: background 0.2s, transform 0.15s var(--ease), border-color 0.3s;
+  margin-bottom: 16px;
 }
-.commit:hover {
-  background: rgba(255, 255, 255, 0.11);
+.sugg-glyph .glyph {
+  width: 26px;
+  height: 26px;
 }
-.commit:active {
-  transform: scale(0.985);
-  background: var(--text);
-  color: #000;
-}
-.commit-arrow {
-  color: var(--text-3);
-  transition: transform 0.2s var(--ease), color 0.2s;
-}
-.commit:hover .commit-arrow {
-  transform: translateX(3px);
-  color: var(--text);
-}
-.commit.urgency-now {
-  border-color: rgba(255, 255, 255, 0.32);
-  animation: invite 2.4s var(--ease) infinite;
+.sugg-glyph.urgency-now {
+  border-color: rgba(255, 255, 255, 0.3);
+  box-shadow: 0 0 24px -6px rgba(255, 255, 255, 0.3);
+  animation: invite 2.6s var(--ease) infinite;
 }
 @keyframes invite {
   0%,
   100% {
-    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+    box-shadow: 0 0 18px -8px rgba(255, 255, 255, 0.18);
   }
   50% {
-    box-shadow: 0 0 26px -6px rgba(255, 255, 255, 0.28);
+    box-shadow: 0 0 30px -6px rgba(255, 255, 255, 0.4);
   }
+}
+.sugg-title {
+  font-size: 23px;
+  font-weight: 560;
+  letter-spacing: -0.022em;
+  line-height: 1.22;
+  margin: 0 0 14px;
+  text-wrap: balance;
+}
+.evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-bottom: 22px;
+}
+.ev {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  color: var(--text-2);
+  background: rgba(255, 255, 255, 0.04);
+  border: 0.5px solid var(--hairline);
+  border-radius: 999px;
+  padding: 5px 11px 5px 9px;
+}
+.ev-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-3);
+}
+.sugg-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.confirm {
+  flex: 1;
+  background: var(--text);
+  color: #000;
+  border: none;
+  border-radius: 14px;
+  padding: 14px;
+  font-size: 16px;
+  font-weight: 590;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  transition: transform 0.15s var(--ease), opacity 0.2s;
+}
+.confirm:hover {
+  opacity: 0.92;
+}
+.confirm:active {
+  transform: scale(0.98);
 }
 .let-go {
   background: none;
   border: none;
   color: var(--text-3);
-  font-size: 14px;
-  padding: 14px 10px 4px;
+  font-size: 15px;
+  font-weight: 500;
+  padding: 14px 16px;
   cursor: pointer;
   transition: color 0.2s;
 }

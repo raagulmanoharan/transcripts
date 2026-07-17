@@ -49,6 +49,7 @@ export interface Prediction {
   surface: boolean;
   confidence: number; // 0-100
   urgency: "ambient" | "soon" | "now";
+  icon: string; // glyph name for the leading symbol
   headline: string; // a statement to confirm
   because: string; // triangulation rationale, one line
   factors: string[]; // 2-3 signal fragments fused, shown as the reasoning

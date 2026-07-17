@@ -62,6 +62,10 @@ export function buildPredictionSchema() {
       surface: { type: "boolean" }, // whether anything is worth surfacing now
       confidence: { type: "integer" }, // 0-100
       urgency: { type: "string", enum: ["ambient", "soon", "now"] },
+      icon: {
+        type: "string",
+        enum: ["rain", "sun", "cloud", "message", "note", "walk", "battery", "clock", "location", "calendar", "moon", "idea", "check"],
+      },
       headline: { type: "string" }, // a statement to CONFIRM, never a question
       because: { type: "string" }, // the triangulation rationale, one line
       factors: { type: "array", items: { type: "string" } }, // 2-3 signal fragments fused (each 2-4 words)
@@ -77,6 +81,7 @@ export function buildPredictionSchema() {
       "surface",
       "confidence",
       "urgency",
+      "icon",
       "headline",
       "because",
       "factors",
